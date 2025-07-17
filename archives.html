@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forever Sample Archive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+<style>
+  *{
+    font-family: 'Noto Sans', sans-serif;
+  }
+</style>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="archives">
+  <img src="assets/circle.svg" alt="" class="circle">
+  <!-- header script -->
+  <div class="backcolor">
+    <img src="assets/LineCircles.svg" alt="" class="backCircle">
+    <img src="assets/LineCircles.svg" alt="" class="backCircle">
+    <img src="assets/LineCircles.svg" alt="" class="backCircle">
+    <img src="assets/LineCircles.svg" alt="" class="backCircle">
+    <img src="assets/LineCircles.svg" alt="" class="backCircle">
+    <img src="assets/LineCircles.svg" alt="" class="backCircle">
+  </div>
+  <header>
+     <nav>
+      <a class="menu" id="who" href="index.html">Loading...</a> <div class="menu">/</div> <a class="menu selectedMenu" href="archives.html">프로젝트 Project</a>
+     </nav>
+     <!-- <div class="logo">
+      <a href="#">
+        <img src="sunLogo.svg" alt="logo">
+      </a>
+     </div> -->
+  </header>
+  <div class="copy">
+    <p class="copyText">새로운 태양들은 다층적인 세계관을 실험하는 장입니다. 
+      <br> The New Suns is a site for experimenting with layered worldviews.
+    </p>
+  </div>
+  
+
+  <!--gallery container scropt -->
+  <div id="gallery"></div>
+  
+  <script>
+    // content.json 파일 불러오기
+    fetch('content.json')
+      .then(response => response.json())
+      .then(data => {
+        if (!data || data.length === 0) {
+          document.getElementById('gallery').innerHTML = '<p>등록된 작품이 없습니다.</p>';
+          return;
+        }
+        
+        const gallery = document.getElementById('gallery');
+        
+        data.forEach(item => {
+          // article 요소 생성
+          const article = document.createElement('article');
+          
+          // 링크 요소 생성 (folder/title.html)
+          const link = document.createElement('a');
+          link.href = `artworks/${item.folder}/${item.title}.html`;
+          link.className = 'artwork-link';
+          
+          // 썸네일 컨테이너
+          const thumbnailContainer = document.createElement('div');
+          thumbnailContainer.className = 'thumbnail-container';
+          
+          if (item.thumbnail) {
+            const thumbnail = document.createElement('img');
+            thumbnail.src = `artworks/${item.folder}/${item.thumbnail}`;
+            thumbnail.alt = `${item.title} 썸네일`;
+            thumbnail.loading = 'lazy';
+            thumbnailContainer.appendChild(thumbnail);
+          } else {
+            const noThumbnail = document.createElement('div');
+            noThumbnail.className = 'no-thumbnail';
+            noThumbnail.textContent = ' ';
+            thumbnailContainer.appendChild(noThumbnail);
+          }
+          
+          // 콘텐츠 영역
+          const content = document.createElement('div');
+          content.className = 'content';
+          
+          // 제목
+          const title = document.createElement('h2');
+          title.className = 'artwork-title';
+          title.textContent = item.title;
+          content.appendChild(title);
+          
+          // 설명 (최대 3줄까지만 표시)
+          if (item.text) {
+            // const description = document.createElement('p');
+            // description.className = 'artwork-description';
+            // description.textContent = item.text;
+            // content.appendChild(description);
+          }
+          
+          // 링크에 썸네일과 콘텐츠 추가
+          link.appendChild(thumbnailContainer);
+          link.appendChild(content);
+          
+          // article에 드래그 속성 추가
+          article.draggable = true;
+          article.style.cursor = 'move';
+          
+          // article에 링크 추가
+          article.appendChild(link);
+          
+          // gallery에 article 추가
+          gallery.appendChild(article);
+        });
+        
+        // 모든 article이 생성된 후 드래그 기능 초기화
+        initializeDragAndDrop();
+      })
+      .catch(error => {
+        console.error('오류:', error);
+        document.getElementById('gallery').innerHTML = `<p>콘텐츠를 불러오는데 문제가 발생했습니다.</p>`;
+      });
+  </script>
+
+  <!-- <script>
+    // 스크롤 이벤트 
+    window.addEventListener('scroll', function() {
+      document.querySelector('header').style.opacity = 0.6;
+      document.querySelector('.copy').style.opacity = 0.6;
+    });
+
+    // 스크롤 끝 
+    window.addEventListener('scrollend', function() {
+      document.querySelector('header').style.opacity = 1;
+      document.querySelector('.copy').style.opacity = 1;
+    });
+  </script> -->
+  <script>
+        // 자유 드래그 기능
+    let isDragging = false;
+    let currentElement = null;
+    let offsetX = 0;
+    let offsetY = 0;
+    let startX = 0;
+    let startY = 0;
+    let hasMoved = false;
+
+    // 드래그 기능 초기화 함수
+    function initializeDragAndDrop() {
+      const gallery = document.getElementById('gallery');
+      const articles = gallery.querySelectorAll('article');
+      
+      gallery.style.position = 'relative';
+      gallery.style.minHeight = '100vh';
+      
+      articles.forEach((article, index) => {
+        article.style.position = 'absolute';
+        article.style.zIndex = '1';
+        article.style.transition = 'left 0.1s ease, top 0.1s ease, transform 0.2s ease';
+        article.style.cursor = 'grab';
+        article.style.userSelect = 'none';
+        article.style.webkitUserSelect = 'none';
+        article.style.mozUserSelect = 'none';
+        
+        // 반응형 그리드 크기 계산
+        const isMobile = window.innerWidth <= 768;
+        const articlesPerRow = isMobile ? 1 : 3;
+        const articleWidth = isMobile ? 280 : 350;
+        const articleSpacing = isMobile ? 20 : 50;
+        
+        const row = Math.floor(index / articlesPerRow);
+        const col = index % articlesPerRow;
+        const originalX = col * (articleWidth + articleSpacing) + articleSpacing;
+        const originalY = row * 400 + articleSpacing;
+        
+        article.dataset.originalX = originalX;
+        article.dataset.originalY = originalY;
+        
+        // 화면 크기에 맞는 랜덤 배치
+        const articleRect = { width: 280, height: 200 }; // 예상 아티클 크기
+        const maxX = Math.max(window.innerWidth - articleRect.width - 20, 20);
+        const maxY = Math.max(window.innerHeight - articleRect.height - 100, 100);
+        
+        const randomX = Math.random() * maxX;
+        const randomY = Math.random() * maxY;
+        
+        article.style.left = randomX + 'px';
+        article.style.top = randomY + 'px';
+        
+        // 기본 드래그 동작 비활성화
+        article.draggable = false;
+        const images = article.querySelectorAll('img');
+        const links = article.querySelectorAll('a');
+        
+        images.forEach(img => {
+          img.draggable = false;
+          img.addEventListener('dragstart', e => e.preventDefault());
+        });
+        
+        links.forEach(link => {
+          link.draggable = false;
+          link.addEventListener('dragstart', e => e.preventDefault());
+        });
+        
+        // 추가 이벤트 차단
+        article.addEventListener('selectstart', e => e.preventDefault());
+        article.addEventListener('contextmenu', e => e.preventDefault());
+        
+        // 터치와 마우스 이벤트 모두 처리
+        function handleStart(e) {
+          e.preventDefault();
+          currentElement = article;
+          
+          // 터치와 마우스 좌표 통합 처리
+          const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+          const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+          
+          startX = clientX;
+          startY = clientY;
+          hasMoved = false;
+          
+          const rect = article.getBoundingClientRect();
+          offsetX = clientX - rect.left;
+          offsetY = clientY - rect.top;
+        }
+        
+        // 마우스와 터치 이벤트 리스너 추가
+        article.addEventListener('mousedown', handleStart);
+        article.addEventListener('touchstart', handleStart, { passive: false });
+      });
+
+      // 통합된 이동 이벤트 처리
+      function handleMove(e) {
+        if (currentElement) {
+          const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+          const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+          
+          const moveDistance = Math.abs(clientX - startX) + Math.abs(clientY - startY);
+          if (moveDistance > 5) {
+            hasMoved = true;
+            
+            if (!isDragging) {
+              isDragging = true;
+              currentElement.style.opacity = '0.8';
+              currentElement.style.zIndex = '1000';
+              currentElement.style.transform = 'scale(1.05)';
+              currentElement.style.cursor = 'grabbing';
+              
+              const link = currentElement.querySelector('a');
+              if (link) link.style.pointerEvents = 'none';
+            }
+          }
+          
+          if (isDragging && currentElement) {
+            const galleryRect = gallery.getBoundingClientRect();
+            let x = clientX - galleryRect.left - offsetX;
+            let y = clientY - galleryRect.top - offsetY;
+            
+            // 경계 검사 추가
+            const articleRect = currentElement.getBoundingClientRect();
+            const maxX = gallery.offsetWidth - articleRect.width;
+            const maxY = gallery.offsetHeight - articleRect.height;
+            
+            x = Math.max(0, Math.min(x, maxX));
+            y = Math.max(0, Math.min(y, maxY));
+            
+            currentElement.style.left = x + 'px';
+            currentElement.style.top = y + 'px';
+          }
+        }
+      }
+
+      function handleEnd(e) {
+        if (currentElement) {
+          if (isDragging) {
+            currentElement.style.opacity = '';
+            currentElement.style.zIndex = '1';
+            currentElement.style.transform = '';
+            currentElement.style.cursor = 'grab';
+            
+            const link = currentElement.querySelector('a');
+            if (link) link.style.pointerEvents = '';
+            
+            isDragging = false;
+          } else if (!hasMoved) {
+            const link = currentElement.querySelector('a');
+            if (link && link.href) {
+              window.location.href = link.href;
+            }
+          }
+          
+          currentElement = null;
+          hasMoved = false;
+        }
+      }
+
+      // 전역 이벤트 리스너
+      document.addEventListener('mousemove', handleMove);
+      document.addEventListener('touchmove', handleMove, { passive: false });
+      document.addEventListener('mouseup', handleEnd);
+      document.addEventListener('touchend', handleEnd);
+
+      // 배경 클릭/터치 시 원래 그리드로 돌아가는 기능 (모바일 포함)
+      function handleBackgroundReset(e) {
+        // 아티클이나 아티클 내부 요소가 아닌 배경을 클릭/터치했을 때만 실행
+        const clickedArticle = e.target.closest('article');
+        if (!clickedArticle && !isDragging && !currentElement) {
+          resetToGrid();
+        }
+      }
+
+      // 마우스와 터치 이벤트 모두 처리
+      document.addEventListener('click', handleBackgroundReset);
+      document.addEventListener('touchend', function(e) {
+        // 터치 이벤트에서는 약간의 지연을 두어 드래그와 구분
+        setTimeout(() => {
+          if (!isDragging && !currentElement) {
+            const clickedArticle = e.target.closest('article');
+            if (!clickedArticle) {
+              resetToGrid();
+            }
+          }
+        }, 100);
+      }, { passive: true });
+    }
+
+    // 모든 아티클을 원래 그리드 위치로 이동시키는 함수
+    function resetToGrid() {
+      const articles = document.querySelectorAll('#gallery article');
+      
+      articles.forEach(article => {
+        const originalX = article.dataset.originalX;
+        const originalY = article.dataset.originalY;
+        
+        if (originalX && originalY) {
+          article.style.left = originalX + 'px';
+          article.style.top = originalY + 'px';
+        }
+      });
+    }
+  </script>
+
+<script>
+  // 메뉴 이름 로드
+  async function loadWhoText() {
+    try {
+      const whoResponse = await fetch('profile/who.txt');
+      if (whoResponse.ok) {
+        const whoText = await whoResponse.text();
+        const whoElement = document.getElementById('who');
+        if (whoElement) {
+          whoElement.textContent = whoText.trim();
+        }
+      } else {
+        console.error('who.txt 파일을 불러올 수 없습니다.');
+        document.getElementById('who').textContent = '고권음 Ko kwonkeum';
+      }
+    } catch (error) {
+      console.error('who.txt 로드 중 오류 발생:', error);
+      document.getElementById('who').textContent = '고권음 Ko kwonkeum';
+    }
+  }
+
+  // 페이지 로드 후 백그라운드 원들을 랜덤하게 배치
+  document.addEventListener('DOMContentLoaded', function() {
+    // 메뉴 이름 로드
+    loadWhoText();
+    
+    const backCircles = document.querySelectorAll('.backCircle');
+    
+    function randomizePositions() {
+      backCircles.forEach((circle, index) => {
+        // 화면 크기 고려해서 랜덤 위치 생성
+        const randomX = Math.random() * (window.innerWidth - 100); // 100px 여백
+        const randomY = Math.random() * (window.innerHeight - 100); // 100px 여백
+        
+        circle.style.left = randomX + 'px';
+        circle.style.top = randomY + 'px';
+      });
+    }
+    
+    // 초기 위치 설정
+    randomizePositions();
+    
+    // 창 크기 변경시 재배치
+    window.addEventListener('resize', randomizePositions);
+    
+  });
+  </script>
+</body>
+</html> 
